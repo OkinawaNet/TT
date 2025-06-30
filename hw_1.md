@@ -2,8 +2,8 @@
 
 ### 1. Event Storming
 
-[![Обзор Event Storming](image/hw_1/es_thumb.png)](image/hw_1/es.png)  
-**[Рассмотреть Event Storming поближе ↗](image/hw_1/es.png)**
+[![Обзор Event Storming](image/hw_1/es.png)]
+**[Рассмотреть Event Storming поближе ↗](refs/heads/main/image/hw_1/es.png)**
 
 ### 2. Изменения в связях
 
@@ -22,5 +22,5 @@
 
 ### 3. Схема измененных связей
 
-[![Обзор схемы связей](image/hw_1/comm_thumb.png)](image/hw_1/comm.png)  
-**[Рассмотреть схему связей поближе ↗](image/hw_1/comm.png)**
+[![Обзор схемы связей](image/hw_1/comm.png)]
+**[Рассмотреть схему связей поближе ↗](refs/heads/main/image/hw_1/comm.png)**
