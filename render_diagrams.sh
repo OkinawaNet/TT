@@ -7,12 +7,32 @@ IMAGE_DIR="image"
 # Создаем папку image, если не существует
 mkdir -p "$IMAGE_DIR"
 
-# Получаем список измененных, новых и untracked .drawio файлов
-changed_files=$(git diff --name-only --diff-filter=d HEAD -- "$DRAW_DIR" | grep '\.drawio$')
-changed_files+=$'\n'$(git ls-files --others --exclude-standard -- "$DRAW_DIR" | grep '\.drawio$')
+# Получаем список всех .drawio файлов, включая поддиректории
+all_drawio_files=$(find "$DRAW_DIR" -type f -name "*.drawio")
 
-# Удаляем пустые строки и временные/резервные файлы (например, .bak, .bkp)
-changed_files=$(echo "$changed_files" | grep -v '^$' | grep -v '\..*\.drawio')
+# Фильтруем: оставляем только новые или измененные
+changed_files=""
+for file in $all_drawio_files; do
+    # Игнорируем временные/резервные файлы
+    if [[ "$file" == *".bkp"* || "$file" == *"~"* ]]; then
+        continue
+    fi
+    
+    # Проверяем, является ли файл новым или измененным
+    if ! git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+        # Файл новый (не в git)
+        changed_files+="$file"$'\n'
+    elif git diff --quiet HEAD -- "$file"; then
+        # Файл не изменен
+        continue
+    else
+        # Файл изменен
+        changed_files+="$file"$'\n'
+    fi
+done
+
+# Удаляем пустые строки
+changed_files=$(echo "$changed_files" | grep -v '^$')
 
 # Если нет изменений - выходим
 if [[ -z "$changed_files" ]]; then
@@ -23,14 +43,8 @@ fi
 echo "Files to render:"
 echo "$changed_files"
 
-# Рендерим только измененные файлы
+# Рендерим файлы
 echo "$changed_files" | while IFS= read -r file; do
-    # Пропускаем временные/резервные файлы
-    if [[ "$file" == *".~"* || "$file" == *".bkp"* ]]; then
-        echo "Skipping backup/temporary file: $file"
-        continue
-    fi
-
     # Получаем относительный путь
     REL_PATH="${file#$DRAW_DIR/}"
     # Создаем директорию для выходного файла
@@ -38,13 +52,16 @@ echo "$changed_files" | while IFS= read -r file; do
     mkdir -p "$OUT_DIR"
     
     # Выводим информацию о рендеринге
-    echo "Rendering $file to $OUT_DIR/$(basename "${file%.*}").png"
+    output_file="$OUT_DIR/$(basename "${file%.*}").png"
+    echo "Rendering $file to $output_file"
     
     # Рендерим диаграмму в PNG
-    if ! drawio -x -f png -o "$OUT_DIR/$(basename "${file%.*}").png" "$file"; then
+    if ! drawio -x -f png -o "$output_file" "$file"; then
         echo "Error rendering $file"
+        exit 1
     fi
 done
 
 # Добавляем сгенерированные файлы в Git
 git add "$IMAGE_DIR"
+echo "Rendering completed. Files added to git."
