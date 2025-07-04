@@ -8,12 +8,17 @@ IMAGE_DIR="image"
 mkdir -p "$IMAGE_DIR"
 
 # Получаем список измененных и новых .drawio файлов
-changed_files=$(git status --porcelain "$DRAW_DIR" | grep -E '\.drawio$' | awk '
-    # Обработка переименований: R old -> new
-    $1 ~ /^R/ {print $4}
-    # Обработка остальных изменений: M, A, AM, ?? и др.
-    $1 !~ /^R/ {print $2}
-')
+changed_files=$(git diff --name-only --diff-filter=d HEAD -- "$DRAW_DIR" | grep '\.drawio$')
+changed_files+=$'\n'$(git ls-files --others --exclude-standard -- "$DRAW_DIR" | grep '\.drawio$')
+
+# Удаляем пустые строки
+changed_files=$(echo "$changed_files" | grep -v '^$')
+
+# Если нет изменений - выходим
+if [[ -z "$changed_files" ]]; then
+    echo "No changes in draw files detected."
+    exit 0
+fi
 
 # Рендерим только измененные файлы
 echo "$changed_files" | while IFS= read -r file; do
@@ -22,6 +27,10 @@ echo "$changed_files" | while IFS= read -r file; do
     # Создаем директорию для выходного файла
     OUT_DIR="$IMAGE_DIR/$(dirname "$REL_PATH")"
     mkdir -p "$OUT_DIR"
+    
+    # Выводим информацию о рендеринге
+    echo "Rendering $file"
+    
     # Рендерим диаграмму в PNG
     drawio -x -f png -o "$OUT_DIR/$(basename "${file%.*}").png" "$file"
 done
