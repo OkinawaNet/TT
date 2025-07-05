@@ -7,44 +7,26 @@ IMAGE_DIR="image"
 # Создаем папку image, если не существует
 mkdir -p "$IMAGE_DIR"
 
-# Получаем список всех .drawio файлов, включая поддиректории
-all_drawio_files=$(find "$DRAW_DIR" -type f -name "*.drawio")
-
-# Фильтруем: оставляем только новые или измененные
-changed_files=""
-for file in $all_drawio_files; do
-    # Игнорируем временные/резервные файлы
-    if [[ "$file" == *".bkp"* || "$file" == *"~"* ]]; then
-        continue
-    fi
-    
-    # Проверяем, является ли файл новым или измененным
-    if ! git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
-        # Файл новый (не в git)
-        changed_files+="$file"$'\n'
-    elif git diff --quiet HEAD -- "$file"; then
-        # Файл не изменен
-        continue
-    else
-        # Файл изменен
-        changed_files+="$file"$'\n'
-    fi
-done
-
-# Удаляем пустые строки
-changed_files=$(echo "$changed_files" | grep -v '^$')
+# Получаем список всех .drawio файлов из последнего коммита
+changed_files=$(git diff-tree --no-commit-id --name-only -r HEAD^ HEAD | grep "^$DRAW_DIR/.*\.drawio$" | grep -v "\.bkp$" | grep -v "~$")
 
 # Если нет изменений - выходим
 if [[ -z "$changed_files" ]]; then
-    echo "No changes in draw files detected."
+    echo "No changes in .drawio files detected in the last commit."
     exit 0
 fi
 
 echo "Files to render:"
 echo "$changed_files"
 
+# Проверяем, установлен ли drawio
+if ! command -v drawio >/dev/null 2>&1; then
+    echo "Error: drawio is not installed or not found in PATH."
+    exit 1
+fi
+
 # Рендерим файлы
-echo "$changed_files" | while IFS= read -r file; do
+while IFS= read -r file; do
     # Получаем относительный путь
     REL_PATH="${file#$DRAW_DIR/}"
     # Создаем директорию для выходного файла
@@ -56,12 +38,15 @@ echo "$changed_files" | while IFS= read -r file; do
     echo "Rendering $file to $output_file"
     
     # Рендерим диаграмму в PNG
-    if ! drawio -x -f png -o "$output_file" "$file"; then
+    if ! drawio -x -f png -o "$output_file" "$file" 2>/dev/null; then
         echo "Error rendering $file"
         exit 1
     fi
-done
+done <<< "$changed_files"
 
 # Добавляем сгенерированные файлы в Git
 git add "$IMAGE_DIR"
-echo "Rendering completed. Files added to git."
+# Создаем новый коммит с сгенерированными файлами
+git commit -m "Add/udpate rendered PNGs from drawio files"
+echo "Rendering completed. Generated files committed."
+exit 0
