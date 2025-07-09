@@ -2,7 +2,7 @@
 
 ### 1. Схемы событий
 
-#### TestCreated. Пример события
+#### TestCreated. Пример формального события.
 
 ```json
 {
@@ -28,7 +28,7 @@
 ```
 
 
-#### TestCreated. JSON схема
+#### TestCreated. JSON схема формального события.
 ```json
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -96,6 +96,102 @@
         },
         "event_name": {
             "enum": ["TestCreated"]
+        },
+        "produced_at": {
+            "type": "string"
+        },
+        "payload": {
+            "$ref": "#/definitions/payload"
+        }
+    },
+    "required": [
+        "event_id",
+        "event_version",
+        "event_name",
+        "produced_at",
+        "payload"
+    ]
+}
+```
+
+#### TestPassed. Пример функционального события.
+
+```json
+{
+    "event_id": "90a91f4b-8e34-4a3c-bfc8-f6649597445e",
+    "event_version": 0,
+    "event_name": "TestPassed",
+    "produced_at": "2025-07-09T16:54:00Z",
+    "payload": {
+        "test_replication_id": "90a91f4b-8e34-4a3c-bfc8-f6649597445e",
+        "created_at": "2025-07-09T15:00:00Z",
+        "tasks": [
+            {
+                "replication_id": "90a91f4b-8e34-4a3c-bfc8-f6649597445e",
+                "author_replication_id": "90a91f4b-8e34-4a3c-bfc8-f6649597445e",
+                "created_at": "2025-07-09T14:00:00Z"
+            }
+        ]
+    }
+}
+```
+
+#### TestPassed. JSON схема функционального события.
+```json
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "TestPassed.v0",
+    "description": "Initial json schema for test passed functional event",
+    "definitions": {
+        "payload": {
+            "type": "object",
+            "properties": {
+                "test_replication_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "replication_id": {
+                                "type": "string"
+                            },
+                            "author_replication_id": {
+                                "type": "string"
+                            },
+                            "created_at": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "replication_id",
+                            "author_replication_id",
+                            "created_at"
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "test_replication_id",
+                "created_at",
+                "tasks"
+            ]
+        }
+    },
+    "type": "object",
+    "properties": {
+        "event_id": {
+            "type": "string"
+        },
+        "event_version": {
+            "enum": [0]
+        },
+        "event_name": {
+            "enum": ["TestPassed"]
         },
         "produced_at": {
             "type": "string"
